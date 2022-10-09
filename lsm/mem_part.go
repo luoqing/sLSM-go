@@ -27,15 +27,24 @@ func (r *MemRun) DeleteKey(key K) {
 	return
 }
 
+func (r *MemRun) LookUp(key K) (found bool, value V) {
+	return
+}
+
+func (r *MemRun) NumElements() (num int) {
+	return
+}
+
+
 type MemPart struct {
 	C_0                 []*MemRun
 	Filters             []*BloomFilter
-	ActiveRun           int
 	NumRuns             int
 	EltsPerRun          int
 	FracRunsMerged      float64
 	BfFalsePositiveRate float64
 	NumToMerge          int // ceil(_frac_runs_merged * _num_runs)
+	ActiveRun           int
 }
 
 func NewMemPart() *MemPart {

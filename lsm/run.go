@@ -8,8 +8,48 @@ package lsm
 // 再写测试用例
 // 最后写实现
 
-type int K
-type int V 
+type K struct {
+	Data interface{}
+}
+
+func lessThan(key1 K, key2 K) bool {
+	if value1, ok1 := key1.Data.(int); ok1 {
+		if value2, ok2 := key2.Data.(int); ok2 {
+			return value1 < value2
+		}
+	}
+	if value1, ok1 := key1.Data.(string); ok1 {
+		if value2, ok2 := key2.Data.(string); ok2 {
+			return value1 < value2
+		}
+	}
+	panic("not support key type")
+}
+
+func moreThan(key1 K, key2 K) bool {
+	if value1, ok1 := key1.Data.(int); ok1 {
+		if value2, ok2 := key2.Data.(int); ok2 {
+			return value1 > value2
+		}
+	}
+	if value1, ok1 := key1.Data.(string); ok1 {
+		if value2, ok2 := key2.Data.(string); ok2 {
+			return value1 > value2
+		}
+	}
+	panic("not support key type")
+}
+
+
+
+type V struct {
+	Data interface{}
+}
+
+type KVPair struct {
+	Key   K
+	Value V
+}
 
 type Run interface {
 	GetMin() K
@@ -21,13 +61,3 @@ type Run interface {
 	// get_all
 	// get_all_in_range
 }
-
-type KVPair struct {
-	Key   K
-	Value V
-}
-
-
-
-
-
