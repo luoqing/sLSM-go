@@ -59,16 +59,66 @@ func (r *DiskRun) ConstructIndex() {
 }
 
 // 【todo】根据fencepointer定位key的数据范围 start和end
+// 前闭后开
 func (r *DiskRun) getFlankingFP(key K) (start int, end int) {
+	if lessThan(key, r.minKey) {
+		return
+	}
+	if moreThan(key, r.maxKey) {
+		return
+	}
 	// 二分查找定位出start 和 end
 	left := 0
-	right := len(r.fencePointers)
-
-	return
+	right := len(r.fencePointers) - 1
+	middle := (left + right) >> 1
+	found := false
+	for left <= right {
+		// key > r.Map[middle].Key
+		if moreThan(key, r.fencePointers[middle]) {
+			left = middle + 1
+		} else if key == r.fencePointers[middle] {
+			found = true
+			start = middle * r.pageSize
+			end = start + 1
+			break
+		} else {
+			right = middle - 1
+		}
+		middle = (left + right) >> 1
+	}
+	if !found {
+		// if left > len(r.fencePointers){
+		// 	start = len(r.fencePointers) - 1
+		// } else if left < 0 {
+		// 	start = 0
+		// } else {
+		// 	start = left
+		// }
+		start = right
+		end = start + 1
+	}
+	return start, end
 }
 
 // 【todo】然后zai [start, end) 中查找key的位置
 func (r *DiskRun) binarySearch(start int, n int, key K) (found bool, pos int) {
+	left := start
+	right := start + n - 1
+	middle := (left + right) >> 1
+	for left <= right {
+		// key > r.Map[middle].Key
+		if moreThan(key, r.Map[middle].Key) {
+			left = middle + 1
+		} else if key == r.Map[middle].Key {
+			found = true
+			pos = middle
+			return
+		} else {
+			right = middle - 1
+		}
+		middle = (left + right) >> 1
+	}
+	pos = left // 返回要插入的位置, left是要插入的位置
 	return
 }
 
