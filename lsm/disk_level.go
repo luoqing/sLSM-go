@@ -27,6 +27,7 @@ type DiskLevel struct {
 // merge---mergeSize
 // fencepointer--pageSize
 // 每层level有多少个run， 每个run的大小——level, numruns, runsize
+// 【easy】
 func NewDiskLevel(pageSize int, level int, runSize int, numRuns int, mergeSize int, bfFp float64) *DiskLevel {
 	// 初始化runs
 	return nil
@@ -34,6 +35,7 @@ func NewDiskLevel(pageSize int, level int, runSize int, numRuns int, mergeSize i
 
 // 将runList合并成一个有序的列表，使用堆来实现合并k个有序链表
 // 对于相同key取最后一个值即可。如果遇到墓碑说明要删除。但是后面
+// 【easy】
 func (l *DiskLevel) addRuns(runList []*DiskRun, runLen int, lastLevel int) {
 	return
 }

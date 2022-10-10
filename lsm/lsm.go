@@ -13,19 +13,21 @@ func NewLSM(eltsPerRun int, numRuns int, mergedFrac float64, bfFp float64, pageS
 	return nil
 }
 
-func (l *LSM) InsertKey(key int, value int) {
+// 先插入到内存，如果内存run满了 要sink到磁盘，磁盘是递归下沉
+// 先写内存，再下沉磁盘
+func (l *LSM) InsertKey(key K, value V) {
 
 }
 
-func (l *LSM) Lookup(key int) (found bool, value int) {
+// 先查内存，再查磁盘
+func (l *LSM) Lookup(key K) (found bool, value V) {
 	return
 }
 
-const (
-	V_TOMBSTONE = -1
-)
-
-func (l *LSM) DeleteKey(key int) {
+func (l *LSM) DeleteKey(key K) {
+	V_TOMBSTONE := V{
+		Data:  -1,
+	}
 	l.InsertKey(key, V_TOMBSTONE)
 }
 
