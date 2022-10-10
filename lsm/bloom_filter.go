@@ -37,9 +37,9 @@ func baseHash(data []byte) []uint64 {
 }
 
 type SliceMock struct {
-	addr uintptr
-	len  int
-	cap  int
+	array uintptr
+	len   int
+	cap   int
 }
 
 // http://www.codebaoku.com/it-go/it-go-144265.html
@@ -52,9 +52,9 @@ func ByteToStruct(data []byte) (key *K) {
 func StructToByte(key *K) (data []byte) {
 	len := unsafe.Sizeof(*key)
 	testBytes := &SliceMock{
-		addr: uintptr(unsafe.Pointer(key)),
-		cap:  int(len),
-		len:  int(len),
+		array: uintptr(unsafe.Pointer(key)),
+		cap:   int(len),
+		len:   int(len),
 	}
 	data = *(*[]byte)(unsafe.Pointer(testBytes))
 	// fmt.Printf("[]byte is : %v\n", data)
