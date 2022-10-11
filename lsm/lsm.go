@@ -5,6 +5,10 @@ type LSM struct {
 	DiskData DiskPart
 	// 这个地方还要加锁, 用于merge, 保证线程安全
 }
+var V_TOMBSTONE V = V{
+	Data:  -1,
+}
+
 
 // diskRun的大小取决于合并的大小
 func NewLSM(eltsPerRun int, numRuns int, mergedFrac float64, bfFp float64, pageSize int, diskRunsPerLevel int) *LSM {
@@ -25,9 +29,7 @@ func (l *LSM) Lookup(key K) (found bool, value V) {
 }
 
 func (l *LSM) DeleteKey(key K) {
-	V_TOMBSTONE := V{
-		Data:  -1,
-	}
+	
 	l.InsertKey(key, V_TOMBSTONE)
 }
 

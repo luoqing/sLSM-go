@@ -35,7 +35,6 @@ func NewDiskRun(capacity, pageSize, level int, runID int, bfFp float64) (r *Disk
 	}
 
 	r = &DiskRun{
-		// Map:           make([]KVPair, capacity),
 		Bf:            NewBloomFilter(uint64(capacity), bfFp),
 		Fd:            fd,
 		pageSize:      pageSize,
@@ -93,10 +92,18 @@ func (r *DiskRun) Close() (err error) {
 	return
 }
 
+func (r *DiskRun) GetCapacity() int {
+	return r.capacity
+}
+
+func (r *DiskRun) SetCapacity(n int) {
+	r.capacity = n
+}
+
 // ？？释放就是doUnMap在对象进行销毁的时候
 // 将长度为len的run数组写入到map的offset开始的位置
 func (r *DiskRun) WriteData(run []KVPair, offset int, len int) {
-	copy(r.Map[offset:(offset+len)], run[0:])
+	copy(r.Map[offset:(offset+len)], run[0:len])
 	r.capacity = offset + len // 而不是capacity = offset
 }
 
