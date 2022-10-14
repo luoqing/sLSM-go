@@ -9,16 +9,7 @@ import (
 	"container/heap"
 )
 
-type DiskPart struct {
-	DiskLevels       []*DiskLevel // 磁盘有多层，需要做merge
-	numDiskLevels    int
-	diskRunsPerLevel int
-	pageSize         int
-}
 
-func NewDiskPart() (d *DiskPart){
-	return d
-}
 
 type DiskLevel struct {
 	runs      []*DiskRun
@@ -90,9 +81,9 @@ func (l *DiskLevel) addRuns(runList []*DiskRun, lastLevel bool) {
 				lastValue := l.runs[l.activeRun].Map[j].Value
 				// 最后一层的删除标记的数据要进行删除， 上一个删除标记的数据
 				if j != -1 && lastLevel && lastValue == V_TOMBSTONE {
-					j --
+					j--
 				}
-				j ++
+				j++
 				l.runs[l.activeRun].Map[j] = item.KV
 			}
 			lastKey = key
@@ -101,15 +92,14 @@ func (l *DiskLevel) addRuns(runList []*DiskRun, lastLevel bool) {
 		}
 	}
 	// 最后一个数据如果是删除标记要进行清理
-	if (lastLevel &&  l.runs[l.activeRun].Map[j].Value == V_TOMBSTONE){
-		j = j -1
+	if lastLevel && l.runs[l.activeRun].Map[j].Value == V_TOMBSTONE {
+		j = j - 1
 	}
-	l.runs[l.activeRun].SetCapacity(j+1)
+	l.runs[l.activeRun].SetCapacity(j + 1)
 	l.runs[l.activeRun].ConstructIndex()
-	if j + 1 > 0 {
+	if j+1 > 0 {
 		l.activeRun = l.activeRun + 1
 	}
-
 	return
 }
 
@@ -124,7 +114,6 @@ func (l *DiskLevel) addRunByArray(run []KVPair, runLen int) {
 		l.activeRun = l.activeRun + 1
 	}
 	return
-
 }
 
 // todo:
@@ -135,7 +124,7 @@ func freeMergedRuns(toFree []*DiskRun) {
 
 // 获取mergesize，然后又数据的
 func (l *DiskLevel) getRunsToMerge() (runs []*DiskRun) {
-	for i := 0; i < l.mergeSize; i ++ {
+	for i := 0; i < l.mergeSize; i++ {
 		runs = append(runs, l.runs[i])
 	}
 	return
@@ -152,11 +141,11 @@ func (l *DiskLevel) NumElements() (nums int) {
 // 每层run去lookup
 // 注意从最近的进行查询
 func (l *DiskLevel) LookUp(key K) (found bool, value V) {
-	searchRuns := l.numRuns - 1;
+	searchRuns := l.numRuns - 1
 	if !l.LevelFull() {
 		searchRuns = l.activeRun - 1
 	}
-	for i := searchRuns; i >= 0; i -- {
+	for i := searchRuns; i >= 0; i-- {
 		found, value = l.runs[i].LookUp(key)
 		if found {
 			return
@@ -173,4 +162,3 @@ func (l *DiskLevel) LevelFull() bool {
 func (l *DiskLevel) LevelEmpty() bool {
 	return l.activeRun == 0
 }
-

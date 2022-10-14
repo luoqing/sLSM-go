@@ -1,7 +1,5 @@
 package lsm
 
-import "container/heap"
-
 // 代码不是单纯的将c++翻译成go，而是将你自己的理解进行实现，拿出你的热情
 // 提升编码能力
 // 提升对LSM的理解
@@ -61,6 +59,18 @@ type Item struct {
 }
 
 type PriorityQueue []*Item
+var V_TOMBSTONE V = V{
+	Data:  -1,
+}
+
+var INT32_MIN K = K{
+	Data: -2147483648,
+}
+
+var INT32_MAX K = K{
+	Data: 2147483647,
+}
+
 
 func (pq PriorityQueue) Len() int { return len(pq) }
 func (pq PriorityQueue) Less(i, j int) bool {
