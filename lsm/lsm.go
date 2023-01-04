@@ -1,8 +1,8 @@
 package lsm
 
 type LSM struct {
-	MemData  MemPart // 内存只有一层
-	DiskData DiskPart
+	MemData  *MemPart // 内存只有一层
+	DiskData *DiskPart
 	// 这个地方还要加锁, 用于merge, 保证线程安全
 }
 
@@ -12,8 +12,8 @@ type LSM struct {
 func NewLSM(eltsPerRun int, numRuns int, mergedFrac float64, bfFp float64, pageSize int, diskRunsPerLevel int) *LSM {
 	// 初始化内存部分
 	return &LSM{
-		MemData: NewMemPart(),
-		DiskData: NewDiskPart(),
+		// MemData: NewMemPart(),
+		// DiskData: NewDiskPart(),
 	}
 	// 初始化磁盘部分
 	return nil
