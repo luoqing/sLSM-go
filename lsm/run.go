@@ -59,8 +59,9 @@ type Item struct {
 }
 
 type PriorityQueue []*Item
+
 var V_TOMBSTONE V = V{
-	Data:  -1,
+	Data: -1,
 }
 
 var INT32_MIN K = K{
@@ -70,7 +71,6 @@ var INT32_MIN K = K{
 var INT32_MAX K = K{
 	Data: 2147483647,
 }
-
 
 func (pq PriorityQueue) Len() int { return len(pq) }
 func (pq PriorityQueue) Less(i, j int) bool {
@@ -112,6 +112,8 @@ type Run interface {
 	DeleteKey(key K)
 	LookUp(key K) (found bool, value V)
 	NumElements() int
+	GetAll() []KVPair
+	Range(key1 K, key2 K) []KVPair
 	// get_all
 	// get_all_in_range
 }

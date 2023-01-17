@@ -6,7 +6,6 @@ import (
 	"os"
 	"syscall"
 	"testing"
-	"unsafe"
 
 	"golang.org/x/exp/mmap"
 )
@@ -101,6 +100,7 @@ func TestMmapRead2(t *testing.T) {
 	fmt.Println(string(buff))
 }
 
+/* 这个还是要在老机器上进行测试下， 这个文件不存在，读取的数据不对
 func TestMmapReadStruct(t *testing.T) {
 	filename := fmt.Sprintf("C_0_0.txt")
 	at, err := mmap.Open(filename)
@@ -129,7 +129,7 @@ func TestMmapReadStruct(t *testing.T) {
 	fmt.Printf("size:%d capacity:%d\n", size, capacity)
 	Map := *(*[]KVPair)(unsafe.Pointer(mslice))
 	fmt.Println(Map) // 为什么key写进去了
-}
+}*/
 
 func TestNewDiskRun(t *testing.T) {
 	r := NewDiskRun(10, 2, 0, 0, 0.01)
@@ -166,11 +166,9 @@ func TestNewDiskRun(t *testing.T) {
 	}
 	found, value := r.LookUp(key)
 	fmt.Println(found, value)
-	
+
 	err := r.Close()
 	if err != nil {
 		panic(err)
 	}
 }
-
-

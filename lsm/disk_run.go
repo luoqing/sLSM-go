@@ -222,7 +222,7 @@ func (r *DiskRun) getIndex(key K) (found bool, pos int) {
 	return
 }
 
-func (r *DiskRun) Range(key1 K, key2 K) (i1 int, i2 int) {
+func (r *DiskRun) RangeIndex(key1 K, key2 K) (i1 int, i2 int) {
 	i1, i2 = 0, 0
 
 	if moreThan(key1, r.maxKey) || lessThan(key2, r.minKey) {
@@ -244,12 +244,21 @@ func (r *DiskRun) Range(key1 K, key2 K) (i1 int, i2 int) {
 	return
 }
 
+// [todo]
+func (r *DiskRun) Range(key1 K, key2 K) (data []KVPair) {
+	return
+}
+
 func (r *DiskRun) PrintElts() {
 	for _, element := range r.Map {
-		// fmt.Printf(" (%v, %v)", element.Key.Data, element.Value.Data)
-		fmt.Printf("%v,", element.Key.Data)
+		fmt.Printf(" (%v, %v)", element.Key.Data, element.Value.Data)
+		// fmt.Printf("%v,", element.Key.Data)
 	}
 	return
+}
+
+func (r *DiskRun) GetAll() []KVPair {
+	return r.Map
 }
 
 func (r *DiskRun) LookUp(key K) (found bool, value V) {
@@ -268,13 +277,13 @@ func (r *DiskRun) GetMax() K {
 	return r.maxKey
 }
 
-// func (r *DiskRun) InsertKey(key K, value V) {
-// 	return
-// }
+func (r *DiskRun) InsertKey(key K, value V) {
+	return
+}
 
-// func (r *DiskRun) DeleteKey(key K) {
-// 	return
-// }
+func (r *DiskRun) DeleteKey(key K) {
+	return
+}
 
 func (r *DiskRun) NumElements() (num int) {
 	num = r.capacity

@@ -9,8 +9,6 @@ import (
 	"container/heap"
 )
 
-
-
 type DiskLevel struct {
 	runs      []*DiskRun
 	level     int // 当前level
@@ -51,7 +49,7 @@ func NewDiskLevel(pageSize int, level int, runSize int, numRuns int, mergeSize i
 // 对于key相同的还是要取最后的那个
 // l.runs[l.activeRun].Map
 // newRunsize = 所有元素的总和
-func (l *DiskLevel) addRuns(runList []*DiskRun, lastLevel bool) {
+func (l *DiskLevel) AddRuns(runList []*DiskRun, lastLevel bool) {
 	p := make([]int, len(runList))
 	pq := &PriorityQueue{}
 	for i := 0; i < len(runList); i++ {
@@ -106,7 +104,7 @@ func (l *DiskLevel) addRuns(runList []*DiskRun, lastLevel bool) {
 // 当内存不够的时候要将run写入到map
 // 一个run同步一个文件？
 // 多个run合并后同步到一个文件
-func (l *DiskLevel) addRunByArray(run []KVPair, runLen int) {
+func (l *DiskLevel) AddRunByArray(run []KVPair, runLen int) {
 	// 为什么还要 runLen == l.runSize
 	if l.activeRun < l.numRuns && runLen == l.runSize {
 		l.runs[l.activeRun].WriteData(run, 0, runLen)
@@ -117,13 +115,13 @@ func (l *DiskLevel) addRunByArray(run []KVPair, runLen int) {
 }
 
 // todo:
-func freeMergedRuns(toFree []*DiskRun) {
+func (l *DiskLevel) FreeMergedRuns(toFree []*DiskRun) {
 	//对于合并的数据进行空间释放, 释放
 	return
 }
 
 // 获取mergesize，然后又数据的
-func (l *DiskLevel) getRunsToMerge() (runs []*DiskRun) {
+func (l *DiskLevel) GetRunsToMerge() (runs []*DiskRun) {
 	for i := 0; i < l.mergeSize; i++ {
 		runs = append(runs, l.runs[i])
 	}
@@ -132,8 +130,10 @@ func (l *DiskLevel) getRunsToMerge() (runs []*DiskRun) {
 
 func (l *DiskLevel) NumElements() (nums int) {
 	nums = 0
-	for i := 0; i < l.numRuns; i++ {
-		nums += l.runs[i].GetCapacity()
+	// for i := 0; i < l.numRuns; i++ {
+	for i := 0; i <= l.activeRun; i++ {
+		// nums += l.runs[i].GetCapacity()
+		nums += l.runs[i].NumElements()
 	}
 	return
 }
@@ -161,4 +161,10 @@ func (l *DiskLevel) LevelFull() bool {
 
 func (l *DiskLevel) LevelEmpty() bool {
 	return l.activeRun == 0
+}
+
+func (l *DiskLevel) PrintElts() {
+	for j := 0; j < l.activeRun; j++ {
+		l.runs[j].PrintElts()
+	}
 }
