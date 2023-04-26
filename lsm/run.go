@@ -8,11 +8,6 @@ package lsm
 // 再写测试用例
 // 最后写实现
 
-type K struct {
-	// Data interface{}  // 如果是interface，文件存储的是指针，数据并不是一直都保留的
-	Data int // 使用int也是可以的
-}
-
 func lessThan(key1 K, key2 K) bool {
 	return key1.Data < key2.Data
 	// if value1, ok1 := key1.Data.(int); ok1 {
@@ -43,6 +38,11 @@ func moreThan(key1 K, key2 K) bool {
 	panic("not support key type")
 }
 
+type K struct {
+	// Data interface{}  // 如果是interface，文件存储的是指针，数据并不是一直都保留的
+	Data int // 使用int也是可以的
+}
+
 type V struct {
 	// Data interface{}
 	Data int
@@ -53,9 +53,23 @@ type KVPair struct {
 	Value V
 }
 
+type Run interface {
+	InsertKey(key K, value V)
+	DeleteKey(key K)
+	LookUp(key K) (found bool, value V)
+	GetMin() K
+	GetMax() K
+	NumElements() int
+	GetAll() []KVPair
+	Range(key1 K, key2 K) []KVPair
+	// get_all
+	// get_all_in_range
+}
+
 type Item struct {
-	KV    KVPair
-	index int
+	KV       KVPair
+	priority int
+	index    int // 必须大小，否则无法暴露在外进行复制
 }
 
 type PriorityQueue []*Item
@@ -76,9 +90,9 @@ func (pq PriorityQueue) Len() int { return len(pq) }
 func (pq PriorityQueue) Less(i, j int) bool {
 	// We want Pop to give us the highest, not lowest, priority so we use greater than here.
 	if pq[i].KV.Key == pq[j].KV.Key {
-		return pq[i].index < pq[j].index
+		return pq[i].priority > pq[j].priority
 	} else {
-		return moreThan(pq[i].KV.Key, pq[j].KV.Key)
+		return lessThan(pq[i].KV.Key, pq[j].KV.Key)
 	}
 }
 
@@ -93,27 +107,14 @@ func (pq *PriorityQueue) Push(x interface{}) {
 	item := x.(*Item)
 	item.index = n
 	*pq = append(*pq, item)
+
 }
 
 func (pq *PriorityQueue) Pop() interface{} {
 	old := *pq
 	n := len(old)
 	item := old[n-1]
-	old[n-1] = nil  // avoid memory leak
 	item.index = -1 // for safety
 	*pq = old[0 : n-1]
 	return item
-}
-
-type Run interface {
-	GetMin() K
-	GetMax() K
-	InsertKey(key K, value V)
-	DeleteKey(key K)
-	LookUp(key K) (found bool, value V)
-	NumElements() int
-	GetAll() []KVPair
-	Range(key1 K, key2 K) []KVPair
-	// get_all
-	// get_all_in_range
 }

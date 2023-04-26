@@ -17,6 +17,8 @@ func NewBloomFilter(n uint64, fp float64) (bf *BloomFilter) {
 	size := -1 * float64(n) * (math.Log2(fp) / denom)
 	bf = &BloomFilter{}
 	bf.bits = make([]bool, int(size))
+	// log.Printf("init size:%d\n", int(size))
+
 	ln2 := 0.693147180559945
 	bf.numHashes = int(math.Ceil((size / float64(n)) * ln2))
 	return
@@ -67,6 +69,7 @@ func (bf *BloomFilter) Add(key K) {
 	hashValues := baseHash(data)
 	n := 0
 	for n < bf.numHashes {
+		// log.Printf("size:%d\n", len(bf.bits))
 		pos := bf.nthHash(uint32(n), hashValues[0], hashValues[1], uint64(len(bf.bits)))
 		bf.bits[pos] = true
 		n += 1

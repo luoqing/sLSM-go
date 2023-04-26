@@ -2,6 +2,8 @@ package lsm
 
 import (
 	"fmt"
+	"log"
+	"math"
 	"sort"
 )
 
@@ -14,8 +16,9 @@ type LSM struct {
 // diskRun的大小取决于合并的大小
 func NewLSM(eltsPerRun int, numRuns int, mergedFrac float64, bfFp float64, pageSize int, diskRunsPerLevel int) *LSM {
 	// 初始化内存部分
-	initRunSize := eltsPerRun * numRuns
-	// numToMerge := math.Ceil(mergedFrac * float64(numRuns))
+	numToMerge := int(math.Ceil(mergedFrac * float64(numRuns)))
+	initRunSize := eltsPerRun * numToMerge
+	log.Printf("init lsm\n")
 	return &LSM{
 		MemData:  NewMemPart(eltsPerRun, numRuns, mergedFrac, bfFp),
 		DiskData: NewDiskPart(diskRunsPerLevel, pageSize, initRunSize, mergedFrac, bfFp),
@@ -24,7 +27,9 @@ func NewLSM(eltsPerRun int, numRuns int, mergedFrac float64, bfFp float64, pageS
 
 // 先插入到内存，如果内存run满了 要sink到磁盘，磁盘是递归下沉
 func (l *LSM) InsertKey(key K, value V) {
+	log.Printf("insert key:%v value:%v\n", key, value)
 	if l.MemData.IsFull() {
+		log.Println("memedata is full, start mergeing")
 		l.DoMerge()
 	}
 	l.MemData.InsertKey(key, value)
@@ -73,30 +78,35 @@ func (l *LSM) PrintStats() {
 // bfToMerge 这个都没有写进去，感觉这个可以去掉。估计bloom是重新计算
 func (l *LSM) MergeMemRuns(runsToMerge []*Run, bfToMerge []*BloomFilter) {
 	capacity := l.MemData.EltsPerRun * l.MemData.NumToMerge
-	toMerge := make([]KVPair, capacity)
+	toMerge := make([]KVPair, 0)
+	// toMerge := make([]KVPair, capacity)
 	for i := 0; i < len(runsToMerge); i++ {
 		toMerge = append(toMerge, l.MemData.C_0[i].GetAll()...)
 	}
 	l.MemData.FreeMergedRuns(runsToMerge, bfToMerge)
 	sort.Slice(toMerge, func(i, j int) bool {
-		return moreThan(toMerge[i].Key, toMerge[j].Key)
+		return lessThan(toMerge[i].Key, toMerge[j].Key)
 	})
+	log.Printf("MergeMemRuns toMerge:%v capacity:%d\n", toMerge, capacity)
 	// mergeLock->lock();
 	// 当层磁盘满了要下沉到下一层
 	if l.DiskData.DiskLevels[0].LevelFull() {
-		l.DiskData.MergeDiskRunsToLevel(1) // 这个是递归的
+		l.DiskData.MergeDiskRunsToLevel(0) // 这个是递归的
 	}
 	l.DiskData.DiskLevels[0].AddRunByArray(toMerge, capacity)
 	// mergeLock->unlock();
 }
 
 // [middle]
+// 【问题】你不merge完，我怎么往里面写
 func (l *LSM) DoMerge() {
 	if l.MemData.NumToMerge == 0 {
 		return
 	}
 	runsToMerge, bfToMerge := l.MemData.GetRunsToMerge()
-	go l.MergeMemRuns(runsToMerge, bfToMerge) // 【todo】此处可以加一个channel往channel里面写，或者使用sync waitgroup，要监控这个协程的处理结束，要使用channel进行通信
+	log.Printf("runsToMerge:%d bfToMerge:%d\n", len(runsToMerge), len(bfToMerge))
+	// go l.MergeMemRuns(runsToMerge, bfToMerge) // 【todo】此处可以加一个channel往channel里面写，或者使用sync waitgroup，要监控这个协程的处理结束，要使用channel进行通信
+	l.MergeMemRuns(runsToMerge, bfToMerge)
 	// todo: 要主动释放空间 numtoMerge
 
 	l.MemData.ResetMergedRuns()

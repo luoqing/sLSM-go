@@ -2,6 +2,7 @@ package lsm
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"syscall"
 	"unsafe"
@@ -49,7 +50,7 @@ func NewDiskRun(capacity, pageSize, level int, runID int, bfFp float64) (r *Disk
 	// filesize := int64(unsafe.Sizeof(KVPair{})) * int64(capacity) + 24
 	filesize := int64(unsafe.Sizeof(KVPair{})) * int64(capacity)
 
-	fmt.Println(filesize)
+	// fmt.Println(filesize)
 	// err = syscall.Ftruncate(int(file.Fd()), int64(size))
 	// if err != nil {
 	//     panic(err)
@@ -65,7 +66,7 @@ func NewDiskRun(capacity, pageSize, level int, runID int, bfFp float64) (r *Disk
 		err = fmt.Errorf("mmap failed: %v", err)
 		panic(err)
 	}
-	fmt.Println(len(b))
+	// fmt.Println(len(b))
 	// m := *(**[]KVPair)(unsafe.Pointer(&b))
 	mslice := &SliceMock{
 		array: uintptr(unsafe.Pointer(&b[0])),
@@ -73,8 +74,8 @@ func NewDiskRun(capacity, pageSize, level int, runID int, bfFp float64) (r *Disk
 		cap:   capacity,
 	}
 	r.Map = *(*[]KVPair)(unsafe.Pointer(mslice))
-	fmt.Printf("m:%d\n", len(r.Map))
-	r.capacity = 0
+	// fmt.Printf("map length:%d\n", len(r.Map))
+	// r.capacity = capacity
 	r.mmap_ptr = unsafe.Pointer(&b)
 	return r
 }
@@ -129,25 +130,26 @@ func (r *DiskRun) ConstructIndex() {
 // 边界如何考虑
 func (r *DiskRun) getFlankingFP(key K) (start int, end int) {
 	// invalid
-	if lessThan(key, r.minKey) {
-		start = -2
-		end = -1
-		return
-	}
-	// invalid
-	if moreThan(key, r.maxKey) {
-		start = r.capacity + 1
-		end = start + 1
-		return
-	}
-	// invalid
-	if len(r.fencePointers) == 0 {
-		start = -2
-		end = -1
-		return
-	}
+	fmt.Println(r.minKey, r.maxKey)
+	// if lessThan(key, r.minKey) {
+	// 	start = -2
+	// 	end = -1
+	// 	return
+	// }
+	// // invalid
+	// if moreThan(key, r.maxKey) {
+	// 	start = r.capacity + 1
+	// 	end = start + 1
+	// 	return
+	// }
+	// // invalid
+	// if len(r.fencePointers) == 0 {
+	// 	start = -2
+	// 	end = -1
+	// 	return
+	// }
 
-	if len(r.fencePointers) == 1 {
+	if len(r.fencePointers) <= 1 {
 		start = 0
 		end = r.capacity
 		return
@@ -155,7 +157,12 @@ func (r *DiskRun) getFlankingFP(key K) (start int, end int) {
 
 	if lessThan(key, r.fencePointers[1]) {
 		start = 0
-		end = r.pageSize
+		if r.capacity < r.pageSize {
+			end = r.capacity
+		} else {
+			end = r.pageSize
+		}
+
 		return
 	}
 
@@ -199,8 +206,10 @@ func (r *DiskRun) binarySearch(start int, n int, key K) (found bool, pos int) {
 	left := start
 	right := start + n - 1
 	middle := (left + right) >> 1
-	for left <= right {
+	fmt.Printf("start:%d right:%d middle:%d\n", left, right, middle)
+	for left <= right && left >= start && right <= start+n-1 {
 		// key > r.Map[middle].Key
+		fmt.Printf("middle:%d\n", middle)
 		if moreThan(key, r.Map[middle].Key) {
 			left = middle + 1
 		} else if key == r.Map[middle].Key {
@@ -218,6 +227,7 @@ func (r *DiskRun) binarySearch(start int, n int, key K) (found bool, pos int) {
 
 func (r *DiskRun) getIndex(key K) (found bool, pos int) {
 	start, end := r.getFlankingFP(key)
+	fmt.Printf("start:%d end:%d key:%v\n", start, end, key)
 	found, pos = r.binarySearch(start, end-start, key)
 	return
 }
@@ -250,8 +260,10 @@ func (r *DiskRun) Range(key1 K, key2 K) (data []KVPair) {
 }
 
 func (r *DiskRun) PrintElts() {
-	for _, element := range r.Map {
-		fmt.Printf(" (%v, %v)", element.Key.Data, element.Value.Data)
+	log.Printf("disk run len:%d capacity:%d\n", len(r.Map), r.capacity)
+	for i := 0; i < r.capacity; i++ {
+		element := r.Map[i]
+		fmt.Printf("(%v, %v)", element.Key.Data, element.Value.Data)
 		// fmt.Printf("%v,", element.Key.Data)
 	}
 	return
