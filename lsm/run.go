@@ -55,15 +55,13 @@ type KVPair struct {
 
 type Run interface {
 	InsertKey(key K, value V)
-	DeleteKey(key K)
+	// DeleteKey(key K) // 基于日志的都不用实现
 	LookUp(key K) (found bool, value V)
-	GetMin() K
-	GetMax() K
+	// GetMin() K // 实现了没用到
+	// GetMax() K // 实现了没用到
 	NumElements() int
 	GetAll() []KVPair
-	Range(key1 K, key2 K) []KVPair
-	// get_all
-	// get_all_in_range
+	// Range(key1 K, key2 K) []KVPair // 实现了没用到
 }
 
 type Item struct {

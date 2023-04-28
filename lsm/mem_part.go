@@ -30,7 +30,9 @@ func NewMemPart(eltsPerRun, numRuns int, fracRunsMerged, bfFalsePositiveRate flo
 	}
 	for i := 0; i < numRuns; i++ {
 		// m.C_0[i] = NewArrayRun(INT32_MIN, INT32_MAX) // 这个地方可以定义是arrayrun还是skiplist
-		m.C_0[i] = NewSkipListRun(INT32_MIN, INT32_MAX)
+		// m.C_0[i] = NewSkipListRun(INT32_MIN, INT32_MAX)
+		// m.C_0[i] = NewBPlusTreeRun2(32, INT32_MIN, INT32_MAX)
+		m.C_0[i] = NewBPlusTreeRun(32, INT32_MIN, INT32_MAX)
 
 		m.Filters[i] = NewBloomFilter(uint64(eltsPerRun), bfFalsePositiveRate)
 	}
@@ -87,10 +89,9 @@ func (m *MemPart) Size() (size int) {
 	return size
 }
 
-func (m *MemPart) GetRunsToMerge() (runsToMerge []*Run, bfToMerge []*BloomFilter) {
+func (m *MemPart) GetRunsToMerge() (runsToMerge []Run) {
 	for i := 0; i < m.NumToMerge; i++ {
-		runsToMerge = append(runsToMerge, &m.C_0[i])
-		bfToMerge = append(bfToMerge, m.Filters[i])
+		runsToMerge = append(runsToMerge, m.C_0[i])
 	}
 	return
 }

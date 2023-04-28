@@ -15,6 +15,7 @@ type DiskRun struct {
 	Bf            *BloomFilter
 	pageSize      int
 	fencePointers []K // 存储多个key，按一定步长pageSize提取key，这样即使不存储pos，也知道key对应在哪个范围
+	size          int
 	capacity      int
 	filename      string
 	level         int
@@ -27,6 +28,7 @@ type DiskRun struct {
 
 // 【todo】capacity这个字段有啥用--- map的大小, 用来初始化map的大小，方便mmap
 func NewDiskRun(capacity, pageSize, level int, runID int, bfFp float64) (r *DiskRun) {
+
 	// 创建文件 C_level_runID.txt
 	// mmap --- 主要为了创建map
 	filename := fmt.Sprintf("C_%d_%d.txt", level, runID)
@@ -34,12 +36,12 @@ func NewDiskRun(capacity, pageSize, level int, runID int, bfFp float64) (r *Disk
 	if err != nil {
 		panic(err)
 	}
-
 	r = &DiskRun{
 		Bf:            NewBloomFilter(uint64(capacity), bfFp),
 		Fd:            fd,
 		pageSize:      pageSize,
 		capacity:      0,
+		size:          capacity,
 		fencePointers: make([]K, 0),
 		filename:      filename,
 		level:         level,
@@ -103,9 +105,12 @@ func (r *DiskRun) SetCapacity(n int) {
 
 // ？？释放就是doUnMap在对象进行销毁的时候
 // 将长度为len的run数组写入到map的offset开始的位置
-func (r *DiskRun) WriteData(run []KVPair, offset int, len int) {
-	copy(r.Map[offset:(offset+len)], run[0:len])
-	r.capacity = offset + len // 而不是capacity = offset
+func (r *DiskRun) WriteData(run []KVPair, offset int, length int) {
+	// if offset+length > len(r.Map) {
+	// log.Printf("offset:%d len:%d capacity:%d size:%d, run:%d", offset, length, len(r.Map), r.size, len(run))
+	// }
+	copy(r.Map[offset:(offset+length)], run[0:length])
+	r.capacity = offset + length // 而不是capacity = offset
 }
 
 // 根据map中的数据构建索引——bloomfilter + fencepointer + minkey, maxkey
@@ -130,7 +135,7 @@ func (r *DiskRun) ConstructIndex() {
 // 边界如何考虑
 func (r *DiskRun) getFlankingFP(key K) (start int, end int) {
 	// invalid
-	fmt.Println(r.minKey, r.maxKey)
+	// fmt.Println(r.minKey, r.maxKey)
 	// if lessThan(key, r.minKey) {
 	// 	start = -2
 	// 	end = -1
@@ -206,10 +211,10 @@ func (r *DiskRun) binarySearch(start int, n int, key K) (found bool, pos int) {
 	left := start
 	right := start + n - 1
 	middle := (left + right) >> 1
-	fmt.Printf("start:%d right:%d middle:%d\n", left, right, middle)
+	// fmt.Printf("start:%d right:%d middle:%d\n", left, right, middle)
 	for left <= right && left >= start && right <= start+n-1 {
 		// key > r.Map[middle].Key
-		fmt.Printf("middle:%d\n", middle)
+		// fmt.Printf("middle:%d\n", middle)
 		if moreThan(key, r.Map[middle].Key) {
 			left = middle + 1
 		} else if key == r.Map[middle].Key {
@@ -227,7 +232,7 @@ func (r *DiskRun) binarySearch(start int, n int, key K) (found bool, pos int) {
 
 func (r *DiskRun) getIndex(key K) (found bool, pos int) {
 	start, end := r.getFlankingFP(key)
-	fmt.Printf("start:%d end:%d key:%v\n", start, end, key)
+	// fmt.Printf("start:%d end:%d key:%v\n", start, end, key)
 	found, pos = r.binarySearch(start, end-start, key)
 	return
 }

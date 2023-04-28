@@ -1,6 +1,7 @@
 package lsm
 
 import (
+	"fmt"
 	"math/rand"
 )
 
@@ -48,6 +49,11 @@ func (list *SkipList) InsertKey(key K, value V) {
 			x = x.forward[i]
 		}
 		update[i] = x
+	}
+	x = x.forward[0]
+	if x != nil && x.key == key {
+		x.value = value
+		return
 	}
 	level := list.randomLevel()
 	if level > list.level {
@@ -112,6 +118,7 @@ func (list *SkipList) GetAll() []KVPair {
 		pairs = append(pairs, KVPair{x.key, x.value})
 		x = x.forward[0]
 	}
+	fmt.Printf("pairs:%d\n", len(pairs))
 	return pairs
 }
 

@@ -2,7 +2,6 @@ package lsm
 
 import (
 	"fmt"
-	"log"
 	"math"
 )
 
@@ -59,7 +58,7 @@ func (d *DiskPart) Size() (size int) {
 
 // 假设level = 1
 func (d *DiskPart) MergeDiskRunsToLevel(level int) {
-	log.Printf("MergeDiskRunsToLevel:%d\n", level)
+	// log.Printf("MergeDiskRunsToLevel:%d\n", level)
 	isLast := false
 	if level == len(d.DiskLevels)-1 {
 		diskRunSize := d.DiskLevels[level].runSize * d.DiskLevels[level].mergeSize
@@ -70,7 +69,7 @@ func (d *DiskPart) MergeDiskRunsToLevel(level int) {
 
 	// 这个为啥判断的是下一层有没有满。而不是当前层有没有满？
 	if d.DiskLevels[level+1].LevelFull() {
-		log.Printf("level:%d is full\n", level+1)
+		// log.Printf("level:%d is full\n", level+1)
 		d.MergeDiskRunsToLevel(level + 1)
 	}
 
@@ -79,7 +78,7 @@ func (d *DiskPart) MergeDiskRunsToLevel(level int) {
 		isLast = true // 刚创建了一层，确实是最后一层
 	}
 	runsToMerge := d.DiskLevels[level].GetRunsToMerge()
-	log.Printf("disk srclevel:%d GetRunsToMerge:%d dstLevel:%d\n", level, len(runsToMerge), level+1)
+	// log.Printf("disk srclevel:%d GetRunsToMerge:%d dstLevel:%d\n", level, len(runsToMerge), level+1)
 	d.DiskLevels[level+1].AddRuns(runsToMerge, isLast)
 	d.DiskLevels[level].FreeMergedRuns(runsToMerge)
 }

@@ -5,11 +5,14 @@ import (
 	"log"
 	"math"
 	"sort"
+	"sync"
 )
 
 type LSM struct {
-	MemData  *MemPart // 内存只有一层
-	DiskData *DiskPart
+	MemData   *MemPart // 内存只有一层
+	DiskData  *DiskPart
+	mergeLock *sync.Mutex
+	mergeChan chan bool
 	// 这个地方还要加锁, 用于merge, 保证线程安全
 }
 
@@ -20,8 +23,9 @@ func NewLSM(eltsPerRun int, numRuns int, mergedFrac float64, bfFp float64, pageS
 	initRunSize := eltsPerRun * numToMerge
 	log.Printf("init lsm\n")
 	return &LSM{
-		MemData:  NewMemPart(eltsPerRun, numRuns, mergedFrac, bfFp),
-		DiskData: NewDiskPart(diskRunsPerLevel, pageSize, initRunSize, mergedFrac, bfFp),
+		MemData:   NewMemPart(eltsPerRun, numRuns, mergedFrac, bfFp),
+		DiskData:  NewDiskPart(diskRunsPerLevel, pageSize, initRunSize, mergedFrac, bfFp),
+		mergeLock: &sync.Mutex{},
 	}
 }
 
@@ -33,6 +37,7 @@ func (l *LSM) InsertKey(key K, value V) {
 		l.DoMerge()
 	}
 	l.MemData.InsertKey(key, value)
+
 }
 
 func (l *LSM) Lookup(key K) (found bool, value V) {
@@ -42,6 +47,9 @@ func (l *LSM) Lookup(key K) (found bool, value V) {
 	}
 
 	// [todo]make sure that there isn't a merge happening as you search the disk, 这个地方要加一个merge的锁的等待
+	if l.mergeChan != nil {
+		<-l.mergeChan
+	}
 
 	found, value = l.DiskData.LookUp(key)
 	if found {
@@ -55,6 +63,10 @@ func (l *LSM) DeleteKey(key K) {
 }
 
 func (l *LSM) PrintElts() {
+	if l.mergeChan != nil {
+		<-l.mergeChan
+	}
+
 	fmt.Println("MEMORY BUFFER")
 	l.MemData.PrintElts()
 
@@ -76,25 +88,24 @@ func (l *LSM) PrintStats() {
 
 // [middle]将要merge的数据写入到disk --- 这个是memrun的需求
 // bfToMerge 这个都没有写进去，感觉这个可以去掉。估计bloom是重新计算
-func (l *LSM) MergeMemRuns(runsToMerge []*Run, bfToMerge []*BloomFilter) {
+func (l *LSM) MergeMemRuns(runsToMerge []Run) {
 	capacity := l.MemData.EltsPerRun * l.MemData.NumToMerge
 	toMerge := make([]KVPair, 0)
-	// toMerge := make([]KVPair, capacity)
 	for i := 0; i < len(runsToMerge); i++ {
-		toMerge = append(toMerge, l.MemData.C_0[i].GetAll()...)
+		toMerge = append(toMerge, (runsToMerge[i]).GetAll()...)
 	}
-	l.MemData.FreeMergedRuns(runsToMerge, bfToMerge)
+	// l.MemData.FreeMergedRuns(runsToMerge, bfToMerge)
 	sort.Slice(toMerge, func(i, j int) bool {
 		return lessThan(toMerge[i].Key, toMerge[j].Key)
 	})
 	log.Printf("MergeMemRuns toMerge:%v capacity:%d\n", toMerge, capacity)
-	// mergeLock->lock();
+	l.mergeLock.Lock()
 	// 当层磁盘满了要下沉到下一层
 	if l.DiskData.DiskLevels[0].LevelFull() {
 		l.DiskData.MergeDiskRunsToLevel(0) // 这个是递归的
 	}
 	l.DiskData.DiskLevels[0].AddRunByArray(toMerge, capacity)
-	// mergeLock->unlock();
+	l.mergeLock.Unlock()
 }
 
 // [middle]
@@ -103,10 +114,18 @@ func (l *LSM) DoMerge() {
 	if l.MemData.NumToMerge == 0 {
 		return
 	}
-	runsToMerge, bfToMerge := l.MemData.GetRunsToMerge()
-	log.Printf("runsToMerge:%d bfToMerge:%d\n", len(runsToMerge), len(bfToMerge))
-	// go l.MergeMemRuns(runsToMerge, bfToMerge) // 【todo】此处可以加一个channel往channel里面写，或者使用sync waitgroup，要监控这个协程的处理结束，要使用channel进行通信
-	l.MergeMemRuns(runsToMerge, bfToMerge)
+	runsToMerge := l.MemData.GetRunsToMerge()
+	log.Printf("runsToMerge:%d \n", len(runsToMerge))
+	if l.mergeChan != nil {
+		<-l.mergeChan
+	}
+	l.mergeChan = make(chan bool)
+	go func() {
+		l.MergeMemRuns(runsToMerge)
+		close(l.mergeChan)
+	}()
+
+	// go l.MergeMemRuns(runsToMerge) // 【todo】此处可以加一个channel往channel里面写，或者使用sync waitgroup，要监控这个协程的处理结束，要使用channel进行通信
 	// todo: 要主动释放空间 numtoMerge
 
 	l.MemData.ResetMergedRuns()

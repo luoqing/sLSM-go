@@ -43,7 +43,7 @@ func NewDiskLevel(pageSize int, level int, runSize int, numRuns int, mergeSize i
 		run := NewDiskRun(runSize, pageSize, level, i, bfFp)
 		l.runs[i] = run
 	}
-	log.Printf("init disk level:%d numRuns:%d runSize:%d mergeSize:%d\n", level, runSize, numRuns, mergeSize)
+	// log.Printf("init disk level:%d numRuns:%d runSize:%d mergeSize:%d\n", level, runSize, numRuns, mergeSize)
 	return l
 }
 
@@ -55,8 +55,8 @@ func NewDiskLevel(pageSize int, level int, runSize int, numRuns int, mergeSize i
 // newRunsize = 所有元素的总和
 
 func (l *DiskLevel) AddRuns2(runList []*DiskRun, lastLevel bool) {
-	log.Printf("before add runs:%d isLast:%v\n", len(runList), lastLevel)
-	l.PrintElts()
+	// log.Printf("before add runs:%d isLast:%v\n", len(runList), lastLevel)
+	// l.PrintElts()
 	p := make([]int, len(runList))
 	pq := &PriorityQueue{}
 	heap.Init(pq)
@@ -68,7 +68,7 @@ func (l *DiskLevel) AddRuns2(runList []*DiskRun, lastLevel bool) {
 			priority: i,
 		}
 		heap.Push(pq, item)
-		log.Printf("push runlist %d item 0 to heap:%v\n", i, item)
+		// log.Printf("push runlist %d item 0 to heap:%v\n", i, item)
 	}
 	// var lastKey K = runList[0].Map[0].Key
 	var lastKey K = INT32_MAX
@@ -101,7 +101,7 @@ func (l *DiskLevel) AddRuns2(runList []*DiskRun, lastLevel bool) {
 				priority: k,
 			}
 			heap.Push(pq, item)
-			log.Printf("push runlist %d item %d to heap:%v\n", k, p[k], item)
+			// log.Printf("push runlist %d item %d to heap:%v\n", k, p[k], item)
 		}
 	}
 
@@ -113,13 +113,13 @@ func (l *DiskLevel) AddRuns2(runList []*DiskRun, lastLevel bool) {
 	if j+1 > 0 {
 		l.activeRun = l.activeRun + 1
 	}
-	log.Println("after add runs")
-	l.PrintElts()
+	// log.Println("after add runs")
+	// l.PrintElts()
 }
 
 func (l *DiskLevel) AddRuns(runList []*DiskRun, lastLevel bool) {
-	log.Println("before add runs")
-	l.PrintElts()
+	// log.Println("before add runs")
+	// l.PrintElts()
 	p := make([]int, len(runList))
 	pq := &PriorityQueue{}
 	for i := 0; i < len(runList); i++ {
@@ -173,8 +173,8 @@ func (l *DiskLevel) AddRuns(runList []*DiskRun, lastLevel bool) {
 	if j+1 > 0 {
 		l.activeRun = l.activeRun + 1
 	}
-	log.Println("after add runs")
-	l.PrintElts()
+	// log.Println("after add runs")
+	// l.PrintElts()
 	return
 }
 
@@ -188,7 +188,7 @@ func (l *DiskLevel) AddRunByArray(run []KVPair, runLen int) {
 	}
 
 	if l.activeRun < l.numRuns && runLen == l.runSize {
-		log.Printf("disk level:%d active run:%d add runs to disk run\n", l.level, l.activeRun)
+		// log.Printf("disk level:%d active run:%d add runs to disk run\n", l.level, l.activeRun)
 		l.runs[l.activeRun].WriteData(run, 0, runLen)
 		l.runs[l.activeRun].ConstructIndex()
 		l.activeRun = l.activeRun + 1

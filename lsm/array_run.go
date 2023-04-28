@@ -1,9 +1,5 @@
 package lsm
 
-import (
-	"log"
-)
-
 // 内存的run
 // 可以是skiplist， 也可以是array
 type ArrayRun struct {
@@ -32,7 +28,7 @@ func (r *ArrayRun) GetMax() (key K) {
 
 func (r *ArrayRun) InsertKey(key K, value V) {
 	found, index := r.binarySearch(key)
-	log.Printf("search before insert key:%v found:%v index:%d\n", key, found, index)
+	// log.Printf("search before insert key:%v found:%v index:%d\n", key, found, index)
 	kv := KVPair{
 		Key:   key,
 		Value: value,
